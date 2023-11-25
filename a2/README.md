@@ -20,17 +20,17 @@ In this assignment you will be writing the game that was presented in class. Thi
 - [x] Enemies will be given a random color upon spawning.
 - [x] Enemies will be given a random speed upon spawning, between a minimum and maximum value specified in the config file.
 - [x] When an enemy reaches the edge of the window, it should bounce off in the opposite direction at the same speed.
-- [ ] When (large) enemies collide with a bullet or player, they are destroyed, and N small enemies spawn in its place, where N is the number of vertices of the original enemy. Each small enemy must have the same number of vertices and color of the original enemy. These small entities travel outward at angles at a fixed intervals equal to (360 / vertices). For example, if the original enemy had 6 sides, the 6 smaller enemies will travel outward in intervals of (360/6) = 60 degrees. The smaller enemies must have a radius equal to half of the original entity.
+- [x] When (large) enemies collide with a bullet or player, they are destroyed, and N small enemies spawn in its place, where N is the number of vertices of the original enemy. Each small enemy must have the same number of vertices and color of the original enemy. These small entities travel outward at angles at a fixed intervals equal to (360 / vertices). For example, if the original enemy had 6 sides, the 6 smaller enemies will travel outward in intervals of (360/6) = 60 degrees. The smaller enemies must have a radius equal to half of the original entity.
 
 ### Drawing:
 
-- [ ] In the render system, all entities should be given a slow rotation, which makes the game look a little nicer.
+- [x] In the render system, all entities should be given a slow rotation, which makes the game look a little nicer.
 - [ ] Any special effects which do not alter game play can be added for up to 5% bonus marks on the assignment. Note that assignments cannot go above 100% total marks, but the 5% bonus can overwrite any marks lost in other areas of the assignment.
-- [ ] Any Entity with a lifespan is currently alive, it should have its Color alpha channel set to a ratio depending on how long it has left to live. For example, if an Entity has a 100 frame life span, and it has been alive for 50 frames, its alpha value should be set to 0.5 * 255. The alpha should go from 255 when it is first spawned, to 0 on the last frame it is alive.
+- [x] Any Entity with a lifespan is currently alive, it should have its Color alpha channel set to a ratio depending on how long it has left to live. For example, if an Entity has a 100 frame life span, and it has been alive for 50 frames, its alpha value should be set to 0.5 * 255. The alpha should go from 255 when it is first spawned, to 0 on the last frame it is alive.
 
 ### Score:
-- [ ] Each time an enemy spawns, it is given a score component of N*100, where N is the number of vertices it has. Small enemies get double this value.
-- [ ] If a player bullet kills an enemy, the game score is increased by the score component of the enemy killed.
+- [x] Each time an enemy spawns, it is given a score component of N*100, where N is the number of vertices it has. Small enemies get double this value.
+- [x] If a player bullet kills an enemy, the game score is increased by the score component of the enemy killed.
 - [ ] The score should be displayed with the font specified by the config file in the top-left corner of the screen.
 
 ### Special Ability:
@@ -45,7 +45,7 @@ This special ability must:
 
 ### Misc:
 - [ ] The 'P' key should pause the game
-- [ ] The 'ESC' key should close the game
+- [x] The 'ESC' key should close the game
 
 
 

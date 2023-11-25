@@ -3,5 +3,5 @@ PlayerConfig(
     collision_radius: 32.,
     speed: 5.,
     color: (1., 0., 0.),
-    vertices: 8.,
+    vertices: 8,
 )

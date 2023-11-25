@@ -1,8 +1,12 @@
+// region: includes
+
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy_common_assets::ron::RonAssetPlugin;
 
 use crate::AppState;
+
+// endregion
 
 // region: Config Structs
 
@@ -32,7 +36,7 @@ pub struct PlayerConfig {
     pub collision_radius: f32,
     pub speed: f32,
     pub color: (f32, f32, f32),
-    pub vertices: f32,
+    pub vertices: u32,
 }
 
 #[derive(Resource, Debug)]
@@ -44,8 +48,8 @@ pub struct EnemyConfig {
     pub collision_radius: f32,
     pub min_speed: f32,
     pub max_speed: f32,
-    pub min_vertices: f32,
-    pub max_vertices: f32,
+    pub min_vertices: u32,
+    pub max_vertices: u32,
     pub small_lifespan: f32,
     pub spawn_interval: f32,
 }
@@ -59,7 +63,7 @@ pub struct BulletConfig {
     pub collision_radius: f32,
     pub speed: f32,
     pub color: (f32, f32, f32),
-    pub vertices: f32,
+    pub vertices: u32,
     pub lifespan: f32,
 }
 
@@ -85,6 +89,7 @@ impl Plugin for ConfigPlugin {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    info!("Setup function running");
     let window_config = WindowHandle(asset_server.load("config/config.window.ron"));
     commands.insert_resource(window_config);
 
@@ -99,6 +104,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let bullet_config = BulletHandle(asset_server.load("config/config.bullet.ron"));
     commands.insert_resource(bullet_config);
+    info!("Setup function ended");
 }
 
 fn load_resources(
@@ -115,6 +121,7 @@ fn load_resources(
     bullet_handle: Res<BulletHandle>,
     mut bullet_configs: ResMut<Assets<BulletConfig>>,
 ) {
+    info!("Load Resources running");
     if let Some(r) = window_configs.remove(window_handle.0.id()) {
         commands.insert_resource(r);
     }
@@ -135,5 +142,6 @@ fn load_resources(
         commands.insert_resource(r);
     }
 
+    info!("Load Resources ended");
     state.set(AppState::InGame);
 }

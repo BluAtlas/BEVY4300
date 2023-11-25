@@ -1,6 +1,6 @@
 // region: includes
 
-use std::{f32::consts::PI, thread::spawn};
+use std::f32::consts::PI;
 
 use bevy::{prelude::*, window::*};
 use bevy_rand::{plugin::EntropyPlugin, prelude::WyRand, resource::GlobalEntropy};
@@ -35,7 +35,7 @@ struct CTransform {
 struct CShape {
     radius: f32,
     color: Color,
-    vertices: f32,
+    vertices: u32,
 }
 
 #[derive(Component)]
@@ -44,9 +44,7 @@ struct CCollision {
 }
 
 #[derive(Component)]
-struct CScore {
-    score: f32,
-}
+struct CScore(u32);
 
 #[derive(Component)]
 struct CLifespan {
@@ -61,15 +59,6 @@ struct CInput {
     right: bool,
     down: bool,
     shoot: Option<Vec2>,
-}
-
-#[derive(Component)]
-struct Circle {
-    name: String,
-    position: Vec2,
-    radius: f32,
-    color: Color,
-    vel: Vec2,
 }
 
 // endregion
@@ -90,7 +79,7 @@ struct TPlayer;
 // region: resources
 
 #[derive(Resource)]
-struct GameFontStyle(TextStyle);
+struct TotalScore(u32);
 
 #[derive(Resource)]
 struct TimeSinceSpawn(f32);
@@ -141,6 +130,7 @@ fn main() {
                 .run_if(in_state(AppState::InGame)),
         )
         .insert_resource(TimeSinceSpawn(0.))
+        .insert_resource(TotalScore(0))
         .run();
 }
 
@@ -152,6 +142,7 @@ fn s_setup_window(
     mut windows: Query<&mut Window>,
     player_config: Res<PlayerConfig>,
     window_config: Res<WindowConfig>,
+    mut total_score: ResMut<TotalScore>,
 ) {
     commands.spawn(Camera2dBundle {
         projection: OrthographicProjection {
@@ -176,7 +167,13 @@ fn s_setup_window(
     let width = window.resolution.width();
     let height = window.resolution.height();
 
-    spawn_player(&mut commands, &player_config, &width, &height)
+    spawn_player(
+        &mut commands,
+        &player_config,
+        &mut total_score,
+        &width,
+        &height,
+    )
 }
 
 fn s_setup_font(
@@ -184,16 +181,29 @@ fn s_setup_font(
     asset_server: Res<AssetServer>,
     font_config: Res<FontConfig>,
 ) {
-    commands.insert_resource(GameFontStyle(TextStyle {
-        font: asset_server.load(font_config.file.clone()),
-        font_size: font_config.size,
-        color: Color::rgba(
-            font_config.color.0,
-            font_config.color.1,
-            font_config.color.2,
-            1.,
-        ),
-    }));
+    commands.spawn(Text2dBundle {
+        text: Text::from_section(
+            "0",
+            TextStyle {
+                font: asset_server.load(font_config.file.clone()),
+                font_size: font_config.size,
+                color: Color::rgba(
+                    font_config.color.0,
+                    font_config.color.1,
+                    font_config.color.2,
+                    1.,
+                ),
+            },
+        )
+        .with_alignment(TextAlignment::Left),
+
+        transform: Transform {
+            translation: Vec3::new(20., 20., 0.),
+            ..Default::default()
+        },
+        text_anchor: bevy::sprite::Anchor::BottomLeft,
+        ..Default::default()
+    });
 }
 
 // endregion
@@ -203,8 +213,14 @@ fn s_setup_font(
 fn s_render(
     circle_query: Query<(&CShape, &CTransform), Without<CLifespan>>,
     mut lifespan_query: Query<(&mut CShape, &CTransform, &CLifespan)>,
+    mut text_query: Query<&mut Text>,
     mut gizmos: Gizmos,
+    total_score: Res<TotalScore>,
 ) {
+    for mut text in text_query.iter_mut() {
+        text.sections[0].value = format!("Score: {}", total_score.0);
+    }
+
     for (shape, tf) in circle_query.iter() {
         gizmos
             .arc_2d(tf.pos, tf.angle, 2. * PI, shape.radius, shape.color)
@@ -342,6 +358,11 @@ fn s_enemy_spawner(
     if time_since_spawn.0 > enemy_config.spawn_interval {
         time_since_spawn.0 = 0.;
         let window = windows.single();
+        let vertices = rng_range_u32(
+            rng.as_mut(),
+            enemy_config.min_vertices,
+            enemy_config.max_vertices,
+        );
         commands.spawn((
             CTransform {
                 pos: Vec2 {
@@ -370,15 +391,12 @@ fn s_enemy_spawner(
                     rng_range(rng.as_mut(), 0.2, 1.),
                     1.,
                 ),
-                vertices: rng_range_u32(
-                    rng.as_mut(),
-                    enemy_config.min_vertices as u32,
-                    enemy_config.max_vertices as u32,
-                ) as f32,
+                vertices,
             },
             CCollision {
                 rad: enemy_config.collision_radius,
             },
+            CScore(vertices * 100),
             TEnemy,
         ));
     }
@@ -386,42 +404,59 @@ fn s_enemy_spawner(
 
 fn s_collisions(
     mut commands: Commands,
+    mut total_score: ResMut<TotalScore>,
     bullet_query: Query<(Entity, &CTransform, &CCollision, &TBullet)>,
-    enemy_query: Query<(Entity, &CTransform, &CCollision, &TEnemy)>,
+    enemy_query: Query<(Entity, &CTransform, &CCollision, &CShape, &CScore, &TEnemy)>,
     mut player: Query<(Entity, &CTransform, &CCollision, &TPlayer)>,
     player_config: Res<PlayerConfig>,
+    enemy_config: Res<EnemyConfig>,
     window: Query<&Window>,
 ) {
     let p = player.get_single_mut();
-    for (e_e, e_tf, e_c, _) in enemy_query.iter() {
+    for (e_e, e_tf, e_c, e_sh, e_sc, _) in enemy_query.iter() {
+        // enemy-player collisions
         if let Ok((p_e, p_tf, p_c, _)) = p {
             if is_collision(&e_tf.pos, &e_c.rad, &p_tf.pos, &p_c.rad) {
                 commands.entity(p_e).despawn();
+                commands.entity(e_e).despawn();
+                spawn_small_enemies(&mut commands, e_tf, e_sh, &enemy_config.small_lifespan);
                 let window = window.single();
                 spawn_player(
                     &mut commands,
                     &player_config,
+                    &mut total_score,
                     &window.width(),
                     &window.height(),
                 );
                 break;
             }
         }
+        // enemy-bullet collisions
         for (b_e, b_tf, b_c, _) in bullet_query.iter() {
             if is_collision(&e_tf.pos, &e_c.rad, &b_tf.pos, &b_c.rad) {
                 commands.entity(e_e).despawn();
                 commands.entity(b_e).despawn();
+                total_score.0 += e_sc.0;
+                spawn_small_enemies(&mut commands, e_tf, e_sh, &enemy_config.small_lifespan);
                 break;
             }
         }
     }
 }
 
-fn s_lifespan(mut commands: Commands, mut query: Query<(Entity, &mut CLifespan)>, time: Res<Time>) {
-    for (e, mut ls) in query.iter_mut() {
+fn s_lifespan(
+    mut total_score: ResMut<TotalScore>,
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut CLifespan, Option<&CScore>)>,
+    time: Res<Time>,
+) {
+    for (e, mut ls, maybe_sc) in query.iter_mut() {
         ls.remaining -= time.delta_seconds();
         if ls.remaining < 0. {
             commands.entity(e).despawn();
+            if let Some(score) = maybe_sc {
+                total_score.0 += score.0;
+            }
         }
     }
 }
@@ -430,13 +465,14 @@ fn s_lifespan(mut commands: Commands, mut query: Query<(Entity, &mut CLifespan)>
 
 // region: functions
 
-fn spawn_small_enemies(mut commands: Commands, tf: CTransform, s: CShape, small_lifespan: f32) {
-    for i in 0..(s.vertices.round() as i8) {
-        let i = f32::from(i);
+fn spawn_small_enemies(commands: &mut Commands, tf: &CTransform, s: &CShape, small_lifespan: &f32) {
+    for i in 0..(s.vertices) {
+        let i = i as f32;
+        let vel = Vec2::from_angle(tf.angle + (i * 2. * PI / s.vertices as f32));
         commands.spawn((
             CTransform {
                 pos: tf.pos,
-                vel: Vec2::from_angle(tf.angle * i),
+                vel,
                 angle: tf.angle * i,
             },
             CShape {
@@ -445,9 +481,10 @@ fn spawn_small_enemies(mut commands: Commands, tf: CTransform, s: CShape, small_
                 vertices: s.vertices,
             },
             CLifespan {
-                remaining: todo!(),
-                total: todo!(),
+                remaining: *small_lifespan,
+                total: *small_lifespan,
             },
+            CScore(s.vertices * 100),
         ));
     }
 }
@@ -478,9 +515,11 @@ fn transform_tick(tf: &mut CTransform, radius: f32, width: f32, height: f32, del
 fn spawn_player(
     commands: &mut Commands,
     player_config: &Res<PlayerConfig>,
+    total_score: &mut TotalScore,
     width: &f32,
     height: &f32,
 ) {
+    total_score.0 = 0;
     commands.spawn((
         CTransform {
             pos: Vec2 {

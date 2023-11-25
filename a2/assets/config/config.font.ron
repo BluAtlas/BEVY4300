@@ -1,5 +1,5 @@
 FontConfig(
     file: "fonts/FiraMono-Medium.ttf",
-    size: 12.,
+    size: 36.,
     color: (1.,1.,1.)
 )

@@ -3,8 +3,8 @@ EnemyConfig (
     collision_radius: 32.,
     min_speed: -3.,
     max_speed: 3.,
-    min_vertices: 3.,
-    max_vertices: 8.,
+    min_vertices: 3,
+    max_vertices: 8,
     small_lifespan: 1.5,
     spawn_interval: 1.,
 )
