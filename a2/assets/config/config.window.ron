@@ -1,0 +1,5 @@
+WindowConfig(
+    size: (1280.,720.),
+    frame_limit: 60.,
+    fullscreen: false,
+)

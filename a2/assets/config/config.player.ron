@@ -1,0 +1,7 @@
+PlayerConfig(
+    shape_radius: 32.,
+    collision_radius: 32.,
+    speed: 5.,
+    color: (1., 0., 0.),
+    vertices: 8.,
+)
