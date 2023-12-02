@@ -1,0 +1,4 @@
+// file_path, x_size, y_size, column, row, ms_per_frame
+AnimationConfig(
+    blue_slime_idle: ("textures/blue_slime/idle.png",48.,32.,8,1,200),
+)

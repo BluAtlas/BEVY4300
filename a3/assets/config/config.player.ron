@@ -1,0 +1,9 @@
+PlayerConfig(
+    starting_position: (2., 2.),
+    bounding_box: (48., 32.),
+    walk_speed: 5.,
+    jump_speed: 5.,
+    max_speed: 5.,
+    gravity: -1.,
+    color: (1., 0., 0.),
+)
